@@ -1,6 +1,7 @@
 # 1830 PSS Multimodal RAG Assistant
 # Video of the testing Q8 , Q1, Q7
 https://drive.google.com/file/d/1uq3AxGY8vDXCaCHM1ktQUJA3CVdTK_i5/view?usp=sharing
+
 A grounded, guardrailed Retrieval-Augmented Generation assistant for the Nokia
 1830 PSS Planning Guide (`1830_Technical_Description.pdf`), restricted to
 **Chapters 1-2 only** (physical pages **47-166**: System concept, and
