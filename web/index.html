@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1830 PSS Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafbfd;
+    --panel:rgba(255,255,255,.75);
+    --panel-border:rgba(15,23,42,.09);
+    --ink:#0b0e1a;
+    --ink-muted:#5b6472;
+    --ink-faint:#9aa3b2;
+    --blue:#2e6bff;
+    --purple:#a855f7;
+    --orange:#ff6b35;
+    --green:#16b981;
+    --amber:#e08e00;
+    --red:#e0334f;
+    --nokia-blue:#124191;
+    --grad: linear-gradient(115deg, var(--blue) 0%, var(--purple) 45%, var(--orange) 78%, var(--green) 100%);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  h1,h2,h3,.btn,.badge{font-family:'Space Grotesk',system-ui,sans-serif;}
+
+  /* ---------- ambient background ---------- */
+  .bg-grid{
+    position:fixed; inset:0; z-index:-2;
+    background-image:
+      linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 85%);
+  }
+  .orb{position:fixed; z-index:-1; border-radius:50%; filter:blur(100px); opacity:.28; pointer-events:none;}
+  .orb1{width:520px;height:520px; top:-180px; right:-140px; background:radial-gradient(circle,var(--blue),transparent 70%); animation:drift1 22s ease-in-out infinite;}
+  .orb2{width:460px;height:460px; bottom:-160px; left:-120px; background:radial-gradient(circle,var(--purple),transparent 70%); animation:drift2 26s ease-in-out infinite;}
+  .orb3{width:360px;height:360px; top:38%; left:58%; background:radial-gradient(circle,var(--orange),transparent 70%); opacity:.16; animation:drift1 18s ease-in-out infinite reverse;}
+  @keyframes drift1{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,25px)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(25px,-20px)}}
+
+  /* ---------- shell ---------- */
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 24px 60px;}
+
+  /* ---------- hero ---------- */
+  .hero{padding:38px 4px 46px; max-width:760px;}
+  .eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-muted); font-weight:600; margin-bottom:18px;}
+  h1{
+    font-size:clamp(2.1rem, 4.6vw, 3.4rem);
+    line-height:1.05;
+    font-weight:700;
+    letter-spacing:-.02em;
+    margin:0 0 18px;
+  }
+  h1 .g{
+    color:var(--nokia-blue);
+  }
+  .hero p{color:var(--ink-muted); font-size:1.02rem; line-height:1.65; max-width:56ch; margin:0 0 24px;}
+  .pills{display:flex; flex-wrap:wrap; gap:10px;}
+  .pill{font-size:.76rem; color:var(--ink-muted); border:1px solid var(--panel-border); padding:7px 12px; border-radius:8px; background:rgba(15,23,42,.03); display:flex; align-items:center; gap:7px;}
+  .pill i{width:6px;height:6px;border-radius:50%;background:var(--grad); flex:none;}
+
+  /* ---------- chat card ---------- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:20px;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    overflow:hidden;
+    position:relative;
+  }
+  .card::before{
+    content:""; position:absolute; inset:0; padding:1px; border-radius:20px;
+    background:linear-gradient(120deg, rgba(46,107,255,.5), rgba(168,85,247,.35) 40%, rgba(255,107,53,.3) 70%, rgba(34,229,166,.4));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    pointer-events:none; opacity:.6;
+  }
+
+  .messages{
+    height:min(52vh, 520px);
+    overflow-y:auto;
+    padding:26px 26px 10px;
+    display:flex; flex-direction:column; gap:18px;
+  }
+  .messages::-webkit-scrollbar{width:8px;}
+  .messages::-webkit-scrollbar-thumb{background:rgba(15,23,42,.15); border-radius:8px;}
+
+  .row{display:flex;}
+  .row.user{justify-content:flex-end;}
+  .row.assistant{justify-content:flex-start;}
+
+  .bubble{max-width:78%; padding:14px 16px; font-size:.94rem; line-height:1.6;}
+  .bubble.user{
+    background:var(--grad); color:#08090f; font-weight:500;
+    border-radius:14px 14px 4px 14px;
+  }
+  .bubble.assistant{
+    background:rgba(15,23,42,.035);
+    border:1px solid var(--panel-border);
+    border-left:3px solid transparent;
+    border-image:var(--grad) 1;
+    border-radius:4px 14px 14px 14px;
+    color:var(--ink);
+  }
+  .bubble.assistant.refused{border-image:none; border-left-color:var(--amber);}
+  .bubble.error{background:rgba(224,51,79,.07); border:1px solid rgba(224,51,79,.3); border-radius:4px 14px 14px 14px; color:#8a1130;}
+
+  .meta-row{display:flex; flex-wrap:wrap; gap:7px; margin-top:11px;}
+  .tag{font-size:.68rem; font-weight:600; letter-spacing:.03em; padding:3px 9px; border-radius:999px; text-transform:uppercase;}
+  .tag.cited{background:rgba(34,229,166,.13); color:var(--green); border:1px solid rgba(34,229,166,.3);}
+  .tag.refused{background:rgba(255,176,32,.13); color:var(--amber); border:1px solid rgba(255,176,32,.3);}
+  .tag.time{background:rgba(15,23,42,.05); color:var(--ink-muted); border:1px solid var(--panel-border);}
+
+  details.sources{margin-top:10px; font-size:.8rem;}
+  details.sources summary{cursor:pointer; color:var(--ink-muted); list-style:none; display:flex; align-items:center; gap:6px;}
+  details.sources summary::-webkit-details-marker{display:none;}
+  details.sources summary::before{content:"›"; display:inline-block; transition:transform .15s ease; font-size:1rem;}
+  details.sources[open] summary::before{transform:rotate(90deg);}
+  .src{padding:8px 0 0 4px; color:var(--ink-muted); border-top:1px dashed var(--panel-border); margin-top:8px;}
+  .src-row{display:flex; justify-content:space-between; gap:10px; padding:4px 0; font-size:.78rem;}
+  .src-row span:first-child{color:var(--ink);}
+
+  .thinking{display:flex; align-items:center; gap:10px; color:var(--ink-muted); font-size:.85rem;}
+  .dots{display:flex; gap:5px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--grad); animation:bounce 1.2s infinite ease-in-out;}
+  .dots i:nth-child(2){animation-delay:.15s;}
+  .dots i:nth-child(3){animation-delay:.3s;}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0); opacity:.4;}40%{transform:translateY(-5px); opacity:1;}}
+
+  .empty-state{margin:auto; text-align:center; color:var(--ink-faint); padding:30px 10px;}
+  .suggestions{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:16px;}
+  .sugg{font-size:.78rem; color:var(--ink-muted); border:1px solid var(--panel-border); padding:8px 13px; border-radius:10px; cursor:pointer; background:rgba(15,23,42,.03); transition:.15s ease;}
+  .sugg:hover{border-color:rgba(15,23,42,.3); color:var(--ink);}
+
+  form.composer{
+    display:flex; gap:10px; padding:16px; border-top:1px solid var(--panel-border);
+    background:rgba(15,23,42,.02);
+  }
+  .composer input{
+    flex:1; background:rgba(15,23,42,.035); border:1px solid var(--panel-border);
+    color:var(--ink); border-radius:10px; padding:13px 16px; font-size:.92rem; font-family:'Inter',sans-serif;
+    outline:none; transition:.15s ease;
+  }
+  .composer input::placeholder{color:var(--ink-faint);}
+  .composer input:focus{border-color:rgba(168,85,247,.55); box-shadow:0 0 0 3px rgba(168,85,247,.14);}
+  .btn{
+    border:none; cursor:pointer; font-weight:600; font-size:.88rem; letter-spacing:.01em;
+    padding:0 22px; border-radius:10px; background:var(--nokia-blue); color:#ffffff;
+    display:flex; align-items:center; gap:8px; transition:filter .15s ease, transform .1s ease;
+  }
+  .btn:hover{filter:brightness(1.12);}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; filter:none;}
+  .btn.ghost{background:none; border:1px solid var(--panel-border); color:var(--ink-muted); padding:8px 14px;}
+  .btn.ghost:hover{border-color:rgba(15,23,42,.3); color:var(--ink); filter:none;}
+
+  footer{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 4px 0; color:var(--ink-faint); font-size:.76rem; flex-wrap:wrap;}
+
+  @media (max-width:640px){
+    .bubble{max-width:88%;}
+    .hero{padding-bottom:32px;}
+  }
+</style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Local &middot; Grounded &middot; GPU-accelerated</div>
+      <h1>Ask your <span class="g">network</span> anything.</h1>
+      <p>
+        A retrieval-grounded assistant over the 1830 PSS Planning Guide.
+        Every answer is retrieved from the source document, cited by
+        section and page, and generated by an open-weight model running
+        entirely on this machine - it refuses rather than guesses when the
+        answer isn't in the document.
+      </p>
+      <div class="pills">
+        <span class="pill"><i></i>Runs 100% locally</span>
+        <span class="pill"><i></i>No data leaves your machine</span>
+        <span class="pill"><i></i>Cited, refusal-aware answers</span>
+      </div>
+    </section>
+
+    <div class="card">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="emptyState">
+          <div>Ask a question about Chapters 1-2 of the 1830 PSS Planning Guide.</div>
+          <div class="suggestions">
+            <span class="sugg">How many slots does the 1830 PSS-8 shelf provide?</span>
+            <span class="sugg">Which fan units are supported on the 1830 PSS-32 shelf?</span>
+            <span class="sugg">What does the power filter card do?</span>
+          </div>
+        </div>
+      </div>
+      <form class="composer" id="composer">
+        <input id="input" type="text" placeholder="Ask a question about the document…" autocomplete="off" maxlength="1000">
+        <button class="btn" type="submit" id="sendBtn">
+          Ask
+        </button>
+      </form>
+    </div>
+
+    <footer>
+      <span id="modelLine">Powered by a local, self-hosted model via llama.cpp.</span>
+      <button class="btn ghost" id="clearBtn" type="button">Clear conversation</button>
+    </footer>
+  </div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const emptyState = document.getElementById('emptyState');
+const composer = document.getElementById('composer');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const modelLine = document.getElementById('modelLine');
+const clearBtn = document.getElementById('clearBtn');
+
+let busy = false;
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function textToHtml(s){
+  return escapeHtml(s).replace(/\n/g, '<br>');
+}
+function scrollToBottom(){
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function hideEmptyState(){
+  if (emptyState) emptyState.style.display = 'none';
+}
+
+function addUserMessage(text){
+  hideEmptyState();
+  const row = document.createElement('div');
+  row.className = 'row user';
+  row.innerHTML = `<div class="bubble user">${textToHtml(text)}</div>`;
+  messagesEl.appendChild(row);
+  scrollToBottom();
+}
+
+function addThinkingMessage(){
+  hideEmptyState();
+  const row = document.createElement('div');
+  row.className = 'row assistant';
+  row.id = 'thinking-row';
+  row.innerHTML = `<div class="bubble assistant">
+    <div class="thinking">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span id="thinking-text">Thinking… (local model - this can take up to a minute)</span>
+    </div>
+  </div>`;
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  const start = Date.now();
+  const timer = setInterval(() => {
+    const el = document.getElementById('thinking-text');
+    if (!el) { clearInterval(timer); return; }
+    const secs = Math.floor((Date.now() - start) / 1000);
+    el.textContent = `Thinking… ${secs}s (local model - this can take up to a minute)`;
+  }, 1000);
+  return timer;
+}
+
+function removeThinkingMessage(){
+  const row = document.getElementById('thinking-row');
+  if (row) row.remove();
+}
+
+function addAssistantMessage(data){
+  hideEmptyState();
+  const row = document.createElement('div');
+  row.className = 'row assistant';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble assistant' + (data.refused ? ' refused' : '');
+
+  let html = textToHtml(data.answer);
+  html += `<div class="meta-row">`;
+  html += data.cited
+    ? `<span class="tag cited">Cited</span>`
+    : `<span class="tag time">No citation</span>`;
+  if (data.refused) html += `<span class="tag refused">Not found in document</span>`;
+  html += `<span class="tag time">${data.latency_s}s</span>`;
+  html += `</div>`;
+
+  if (data.sources && data.sources.length){
+    html += `<details class="sources"><summary>Sources (${data.sources.length})</summary><div class="src">`;
+    for (const s of data.sources){
+      const pages = s.page_start === s.page_end ? `p.${s.page_start}` : `p.${s.page_start}-${s.page_end}`;
+      html += `<div class="src-row"><span>${escapeHtml(s.heading)}</span><span>${pages} &middot; ${s.score.toFixed(3)}</span></div>`;
+    }
+    html += `</div></details>`;
+  }
+
+  bubble.innerHTML = html;
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+}
+
+function addErrorMessage(text){
+  hideEmptyState();
+  const row = document.createElement('div');
+  row.className = 'row assistant';
+  row.innerHTML = `<div class="bubble error">${escapeHtml(text)}</div>`;
+  messagesEl.appendChild(row);
+  scrollToBottom();
+}
+
+async function sendMessage(text){
+  if (busy || !text.trim()) return;
+  busy = true;
+  sendBtn.disabled = true;
+  input.disabled = true;
+
+  addUserMessage(text);
+  const timer = addThinkingMessage();
+
+  try{
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text}),
+    });
+    const data = await res.json();
+    clearInterval(timer);
+    removeThinkingMessage();
+    if (!res.ok){
+      addErrorMessage(data.error || `Request failed (${res.status}).`);
+    } else {
+      addAssistantMessage(data);
+    }
+  } catch (err){
+    clearInterval(timer);
+    removeThinkingMessage();
+    addErrorMessage('Could not reach the local server. Is app.py still running?');
+  } finally {
+    busy = false;
+    sendBtn.disabled = false;
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+composer.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value;
+  input.value = '';
+  sendMessage(text);
+});
+
+document.querySelectorAll('.sugg').forEach(el => {
+  el.addEventListener('click', () => {
+    input.value = el.textContent;
+    input.focus();
+  });
+});
+
+clearBtn.addEventListener('click', () => {
+  messagesEl.innerHTML = '';
+  messagesEl.appendChild(emptyState);
+  emptyState.style.display = '';
+});
+
+async function checkHealth(){
+  try{
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    if (data.ready){
+      modelLine.textContent = `Powered by a local, self-hosted model (${data.model}) via ${data.provider === 'huggingface' ? 'llama.cpp' : data.provider} - no data leaves your machine.`;
+    }
+  } catch(err){
+    // health check failed silently - the composer's own error handling covers an unreachable server
+  }
+}
+checkHealth();
+setInterval(checkHealth, 15000);
+input.focus();
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+# Core
+numpy>=2.0
+scikit-learn>=1.4        # used incidentally (not for the required manual cosine search itself)
+pypdf>=6.0                # lightweight fallback PDF reader
+
+# PDF extraction (layout-aware: font size / boldness for heading detection, image extraction)
+pymupdf>=1.28
+
+# Embeddings, cross-encoder re-ranking, CLIP multimodal embeddings
+sentence-transformers>=6.0
+torch>=2.0
+
+# Part B "second, compared implementation"
+faiss-cpu>=1.8
+
+# Part E hybrid search
+rank-bm25>=0.2
+
+# Image handling for the multimodal (CLIP) index
+Pillow>=10.0
+
+# Notebook
+jupyter>=1.1
+ipykernel>=7.0
+notebook>=7.0
+nbconvert>=7.0
+nbformat>=5.10
+matplotlib>=3.8
+
+# LLM generation (Part C.7) - local, self-hosted only (no Anthropic/OpenAI)
+#
+# Default backend: GGUF quantization via llama-cpp-python, loading straight
+# from the Hugging Face Hub (see config.py's GGUF_REPO/GGUF_FILENAME). Plain
+# `pip install llama-cpp-python` gives you a CPU-only build (fine, just
+# slower). For GPU acceleration on Windows + an NVIDIA GPU, install the
+# prebuilt CUDA wheel instead:
+#   pip install "llama-cpp-python==0.3.22" --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+# Pinned to 0.3.22 deliberately, NOT the latest (0.3.35 at time of writing):
+# newer prebuilt CUDA wheels from this index compile in AVX-512 codegen,
+# which crashes with an illegal-instruction error (WinError 0xc000001d) on
+# Intel 12th/13th/14th-gen "hybrid" CPUs (P+E cores) - those chips have
+# AVX-512 fused off, and llama.cpp's CPU-backend init/dispatch doesn't
+# guard against it on this build - confirmed by testing both variants
+# directly against this project's model. 0.3.22 is the newest version at
+# this cu124 index confirmed to compile without AVX-512. If you're not on
+# an Intel hybrid CPU (or hit no crash), the latest version is fine too -
+# drop the `==0.3.22` pin.
+llama-cpp-python>=0.3.0
+
+# Alternate generation backend (provider="transformers" - see llm_client.py),
+# for machines with enough VRAM to hold the whole 4-bit model on GPU without
+# CPU offload:
+transformers>=4.43
+accelerate>=0.33         # required for transformers' device_map="auto"
+bitsandbytes>=0.50; sys_platform != "darwin"   # 4-bit quantization on CUDA GPUs (not available on macOS)
+
+python-dotenv>=1.0       # auto-loads a project-root .env file (HF_TOKEN, etc.)
+
+# NOTE: the default `torch` install (above, under Embeddings) is a CPU-only build.
+# If you have an NVIDIA GPU, install the matching CUDA build instead, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu126
+# (pick the cuXXX tag matching your driver - see https://pytorch.org/get-started/locally/)
+# The GGUF backend above also reuses this CUDA-enabled torch install to
+# resolve a couple of its own CUDA-runtime DLLs on Windows - see
+# `_preload_windows_llama_cpp_dlls()` in llm_client.py.
+
+# Web chat interface (app.py) - local only, no external hosting
+flask>=3.0
